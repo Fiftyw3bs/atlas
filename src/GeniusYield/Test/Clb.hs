@@ -11,7 +11,7 @@ Stability   : develop
 module GeniusYield.Test.Clb (
   GYTxMonadClbT,
   GYTxMonadClb,
-  mkTestForT,
+  -- mkTestForT,
   mkTestFor,
   asClb,
   asRandClb,
@@ -159,59 +159,59 @@ asClb g w i m = evalRandT (asRandClb w i m) g
 liftClb :: forall a m. Monad m => ClbT ApiEra m a -> GYTxMonadClbT m a
 liftClb = GYTxMonadClbT . lift . lift . lift . lift
 
-{- | Given a test name, runs the trace for every wallet, checking there weren't
-     errors.
--}
-mkTestFor :: forall a. String -> (TestInfo -> GYTxMonadClb a) -> Tasty.TestTree
-mkTestFor name = runIdentity . mkTestForT name
+-- {- | Given a test name, runs the trace for every wallet, checking there weren't
+--      errors.
+-- -}
+-- mkTestFor :: forall a. String -> (TestInfo -> GYTxMonadClb a) -> Tasty.TestTree
+-- mkTestFor name = runIdentity . mkTestForT name
 
-mkTestForT :: forall a m. Monad m => String -> (TestInfo -> GYTxMonadClbT m a) -> m Tasty.TestTree
-mkTestForT name action =
-  testNoErrorsTraceClb v w Clb.defaultConwayClbConfig name $ do
-    asClb pureGen (w1 testWallets) nextWalletInt $
-      action TestInfo {testGoldAsset = fakeCoin fakeGold, testIronAsset = fakeCoin fakeIron, testWallets}
- where
-  -- TODO (simplify-genesis): Remove generation of non ada funds.
-  v =
-    valueFromLovelace 1_000_000_000_000_000
-      <> fakeValue fakeGold 1_000_000_000
-      <> fakeValue fakeIron 1_000_000_000
+-- mkTestForT :: forall a m. Monad m => String -> (TestInfo -> GYTxMonadClbT m a) -> m Tasty.TestTree
+-- mkTestForT name action =
+--   testNoErrorsTraceClb v w Clb.defaultConwayClbConfig name $ do
+--     asClb pureGen (w1 testWallets) nextWalletInt $
+--       action TestInfo {testGoldAsset = fakeCoin fakeGold, testIronAsset = fakeCoin fakeIron, testWallets}
+--  where
+--   -- TODO (simplify-genesis): Remove generation of non ada funds.
+--   v =
+--     valueFromLovelace 1_000_000_000_000_000
+--       <> fakeValue fakeGold 1_000_000_000
+--       <> fakeValue fakeIron 1_000_000_000
 
-  w =
-    valueFromLovelace 1_000_000_000_000
-      <> fakeValue fakeGold 1_000_000
-      <> fakeValue fakeIron 1_000_000
+--   w =
+--     valueFromLovelace 1_000_000_000_000
+--       <> fakeValue fakeGold 1_000_000
+--       <> fakeValue fakeIron 1_000_000
 
-  -- TODO (simplify-genesis):: Remove creation of wallets. Only create one (or more) genesis/funder wallet and pass it on.
-  testWallets :: Wallets
-  testWallets =
-    Wallets
-      (mkSimpleWallet (Clb.intToKeyPair 1))
-      (mkSimpleWallet (Clb.intToKeyPair 2))
-      (mkSimpleWallet (Clb.intToKeyPair 3))
-      (mkSimpleWallet (Clb.intToKeyPair 4))
-      (mkSimpleWallet (Clb.intToKeyPair 5))
-      (mkSimpleWallet (Clb.intToKeyPair 6))
-      (mkSimpleWallet (Clb.intToKeyPair 7))
-      (mkSimpleWallet (Clb.intToKeyPair 8))
-      (mkSimpleWallet (Clb.intToKeyPair 9))
+--   -- TODO (simplify-genesis):: Remove creation of wallets. Only create one (or more) genesis/funder wallet and pass it on.
+--   testWallets :: Wallets
+--   testWallets =
+--     Wallets
+--       (mkSimpleWallet (Clb.intToKeyPair 1))
+--       (mkSimpleWallet (Clb.intToKeyPair 2))
+--       (mkSimpleWallet (Clb.intToKeyPair 3))
+--       (mkSimpleWallet (Clb.intToKeyPair 4))
+--       (mkSimpleWallet (Clb.intToKeyPair 5))
+--       (mkSimpleWallet (Clb.intToKeyPair 6))
+--       (mkSimpleWallet (Clb.intToKeyPair 7))
+--       (mkSimpleWallet (Clb.intToKeyPair 8))
+--       (mkSimpleWallet (Clb.intToKeyPair 9))
 
-  -- This is the next consecutive number after the highest one used above for 'Clb.intToKeyPair' calls.
-  nextWalletInt :: Integer
-  nextWalletInt = 10
+--   -- This is the next consecutive number after the highest one used above for 'Clb.intToKeyPair' calls.
+--   nextWalletInt :: Integer
+--   nextWalletInt = 10
 
-  -- \| Helper for building tests
-  testNoErrorsTraceClb :: forall b. GYValue -> GYValue -> Clb.ClbConfig ApiEra -> String -> ClbT ApiEra m b -> m Tasty.TestTree
-  testNoErrorsTraceClb funds walletFunds cfg msg act = do
-    (mbErrors, mock) <- Clb.runClbT (act >> Clb.checkErrors) $ Clb.initClb cfg (valueToApi funds) (valueToApi walletFunds) Nothing
-    let
-      mockLog = "\nEmulator log :\n--------------\n" <> logString
-      options = defaultLayoutOptions {layoutPageWidth = AvailablePerLine 150 1.0}
-      logDoc = Clb.ppLog $ Clb._clbLog mock
-      logString = renderString $ layoutPretty options logDoc
-    pure $ testCaseInfo msg $
-      maybe (pure mockLog) assertFailure $
-        mbErrors >>= \errors -> pure (mockLog <> "\n\nError :\n-------\n" <> errors)
+--   -- \| Helper for building tests
+--   testNoErrorsTraceClb :: forall b. GYValue -> GYValue -> Clb.ClbConfig ApiEra -> String -> ClbT ApiEra m b -> m Tasty.TestTree
+--   testNoErrorsTraceClb funds walletFunds cfg msg act = do
+--     (mbErrors, mock) <- Clb.runClbT (act >> Clb.checkErrors) $ Clb.initClb cfg (valueToApi funds) (valueToApi walletFunds) Nothing
+--     let
+--       mockLog = "\nEmulator log :\n--------------\n" <> logString
+--       options = defaultLayoutOptions {layoutPageWidth = AvailablePerLine 150 1.0}
+--       logDoc = Clb.ppLog $ Clb._clbLog mock
+--       logString = renderString $ layoutPretty options logDoc
+--     pure $ testCaseInfo msg $
+--       maybe (pure mockLog) assertFailure $
+--         mbErrors >>= \errors -> pure (mockLog <> "\n\nError :\n-------\n" <> errors)
 
 mkSimpleWallet :: TL.KeyPair L.S.Payment -> User
 mkSimpleWallet kp =
