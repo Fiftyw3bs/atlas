@@ -73,15 +73,6 @@ decTypes defId = \case
     pure [TySynD tyconName [] (ConT ''Integer)]
   SchemaBytes _schemaInfo _bytesSchema ->
     pure [TySynD tyconName [] (ConT ''Plutus.BuiltinByteString)]
-  SchemaList _schemaInfo MkListSchema {..} ->
-    case lsItems of
-      ListItemSchemaSchema s -> case s of
-        SchemaDefinitionRef itemDefId ->
-          pure [TySynD tyconName [] (AppT ListT (ConT (genTyconName itemDefId)))]
-        _anyOther ->
-          let itemDefId = mkDefinitionId $ unDefinitionId defId <> "_Item"
-           in pure [TySynD tyconName [] (AppT ListT (ConT (genTyconName itemDefId)))] <> decTypes itemDefId s
-      ListItemSchemaSchemas _ -> error $ moduleName <> ": items as a list of schemas is unsupported. " <> createIssue
   SchemaMap _schemaInfo MkMapSchema {..} ->
     let keyDefId = mkDefinitionId $ unDefinitionId defId <> "_Key"
         valDefId = mkDefinitionId $ unDefinitionId defId <> "_Value"
