@@ -14,7 +14,7 @@ module GeniusYield.Types.Blueprint.TH (
   uponBPTypes,
 ) where
 
-import Control.Monad (foldM)
+import Control.Monad
 import Data.ByteString.Base16 qualified as BS16
 import Data.ByteString.Short qualified as SBS
 import Data.List (foldl')
