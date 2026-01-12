@@ -104,6 +104,27 @@ decTypes defId = \case
   SchemaAllOf _ -> error $ moduleName <> ": \"allOf\" is not supported as type is ambiguous."
   SchemaNot _ -> error $ moduleName <> ": \"not\" is not supported as type is ambiguous."
   SchemaDefinitionRef r -> pure [TySynD tyconName [] (ConT (genTyconName r))]
+  SchemaList _schemaInfo MkListSchema {..} ->
+    case lsItems of
+      ListItemSchemaSchema s -> case s of
+        SchemaDefinitionRef itemDefId ->
+          pure [TySynD tyconName [] (AppT ListT (ConT (genTyconName itemDefId)))]
+        _anyOther ->
+          let itemDefId = mkDefinitionId $ unDefinitionId defId <> "_Item"
+           in pure [TySynD tyconName [] (AppT ListT (ConT (genTyconName itemDefId)))] <> decTypes itemDefId s
+      ListItemSchemaSchemas schemas -> do
+        -- Handle tuple case - create a tuple type
+        let arity = length schemas
+        if arity == 0
+          then error $ moduleName <> ": empty list of schemas is not supported. " <> createIssue
+          else do
+            -- Generate types for each schema in the tuple
+            let itemDefIds = [mkDefinitionId $ unDefinitionId defId <> "_Item" <> Text.pack (show i) | i <- [0..arity-1]]
+            itemDecs <- concat <$> zipWithM decTypes itemDefIds schemas
+            -- Create tuple type: (Type1, Type2, ...)
+            let tupleType = foldl' AppT (TupleT arity) (map (ConT . genTyconName) itemDefIds)
+            pure $ itemDecs <> [TySynD tyconName [] tupleType]
+  
  where
   avoidBuiltin = "is a built-in type which are not supported."
 
